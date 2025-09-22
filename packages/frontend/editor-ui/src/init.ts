@@ -9,6 +9,7 @@ import {
 	registerModuleModals,
 	registerModuleProjectTabs,
 	registerModuleResources,
+	registerModuleSettingsSidebarItems,
 } from '@/moduleInitializer/moduleInitializer';
 import { useCloudPlanStore } from '@/stores/cloudPlan.store';
 import { useNodeTypesStore } from '@/stores/nodeTypes.store';
@@ -191,10 +192,10 @@ export async function initializeAuthenticatedFeatures(
 	}
 
 	if (settingsStore.isDataTableFeatureEnabled) {
-		const { sizeState } = await dataStoreStore.fetchDataStoreSize();
-		if (sizeState === 'error') {
+		const { quotaStatus } = await dataStoreStore.fetchDataStoreSize();
+		if (quotaStatus === 'error') {
 			uiStore.pushBannerToStack('DATA_STORE_STORAGE_LIMIT_ERROR');
-		} else if (sizeState === 'warn') {
+		} else if (quotaStatus === 'warn') {
 			uiStore.pushBannerToStack('DATA_STORE_STORAGE_LIMIT_WARNING');
 		}
 	}
@@ -219,6 +220,7 @@ export async function initializeAuthenticatedFeatures(
 	registerModuleResources();
 	registerModuleProjectTabs();
 	registerModuleModals();
+	registerModuleSettingsSidebarItems();
 
 	authenticatedFeaturesInitialized = true;
 }
