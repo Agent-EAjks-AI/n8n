@@ -1361,7 +1361,7 @@ onClickOutside(mapperElRef, onFocusOutOrOutsideClickMapper);
 					remoteParameterOptionsLoadingIssues !== null
 				"
 			>
-				<el-dialog
+				<ElDialog
 					width="calc(100% - var(--spacing-3xl))"
 					:class="$style.modal"
 					:model-value="codeEditDialogVisible"
@@ -1431,7 +1431,7 @@ onClickOutside(mapperElRef, onFocusOutOrOutsideClickMapper);
 							@update:model-value="valueChangedDebounced"
 						/>
 					</div>
-				</el-dialog>
+				</ElDialog>
 
 				<TextEdit
 					:dialog-visible="textEditDialogVisible"
@@ -1642,7 +1642,7 @@ onClickOutside(mapperElRef, onFocusOutOrOutsideClickMapper);
 			</div>
 
 			<div v-else-if="parameter.type === 'color'" ref="inputField" class="color-input">
-				<el-color-picker
+				<ElColorPicker
 					size="small"
 					class="color-picker"
 					:model-value="displayValue"
@@ -1666,7 +1666,7 @@ onClickOutside(mapperElRef, onFocusOutOrOutsideClickMapper);
 				/>
 			</div>
 
-			<el-date-picker
+			<ElDatePicker
 				v-else-if="parameter.type === 'dateTime'"
 				ref="inputField"
 				v-model="tempValue"
@@ -1808,7 +1808,7 @@ onClickOutside(mapperElRef, onFocusOutOrOutsideClickMapper);
 				:disabled="isReadOnly"
 				:title="displayTitle"
 			/>
-			<el-switch
+			<ElSwitch
 				v-else-if="parameter.type === 'boolean'"
 				ref="inputField"
 				:class="{ 'switch-input': true, 'ph-no-capture': shouldRedactValue }"

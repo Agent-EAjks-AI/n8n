@@ -129,7 +129,7 @@ function optionSelected(action: string) {
 		:class="{ [$style.assignmentCollection]: true, [$style.empty]: empty }"
 		:data-test-id="`assignment-collection-${parameter.name}`"
 	>
-		<n8n-input-label
+		<N8nInputLabel
 			:label="parameter.displayName"
 			:show-expression-selector="false"
 			size="small"
@@ -146,7 +146,7 @@ function optionSelected(action: string) {
 					@update:model-value="optionSelected"
 				/>
 			</template>
-		</n8n-input-label>
+		</N8nInputLabel>
 		<div :class="$style.content">
 			<div :class="$style.assignments">
 				<Draggable

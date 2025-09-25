@@ -193,14 +193,14 @@ const onSelectSshKeyType = (value: Validatable) => {
 
 <template>
 	<div>
-		<n8n-heading size="2xlarge" tag="h1">{{
+		<N8nHeading size="2xlarge" tag="h1">{{
 			locale.baseText('settings.sourceControl.title')
-		}}</n8n-heading>
+		}}</N8nHeading>
 		<div
 			v-if="sourceControlStore.isEnterpriseSourceControlEnabled"
 			data-test-id="source-control-content-licensed"
 		>
-			<n8n-callout theme="secondary" icon="info" class="mt-2xl mb-l">
+			<N8nCallout theme="secondary" icon="info" class="mt-2xl mb-l">
 				<I18nT keypath="settings.sourceControl.description" tag="span" scope="global">
 					<template #link>
 						<a :href="locale.baseText('settings.sourceControl.docs.url')" target="_blank">
@@ -208,14 +208,14 @@ const onSelectSshKeyType = (value: Validatable) => {
 						</a>
 					</template>
 				</I18nT>
-			</n8n-callout>
-			<n8n-heading size="xlarge" tag="h2" class="mb-s">{{
+			</N8nCallout>
+			<N8nHeading size="xlarge" tag="h2" class="mb-s">{{
 				locale.baseText('settings.sourceControl.gitConfig')
-			}}</n8n-heading>
+			}}</N8nHeading>
 			<div :class="$style.group">
 				<label for="repoUrl">{{ locale.baseText('settings.sourceControl.repoUrl') }}</label>
 				<div :class="$style.groupFlex">
-					<n8n-form-input
+					<N8nFormInput
 						id="repoUrl"
 						v-model="sourceControlStore.preferences.repositoryUrl"
 						label=""
@@ -227,7 +227,7 @@ const onSelectSshKeyType = (value: Validatable) => {
 						:placeholder="locale.baseText('settings.sourceControl.repoUrlPlaceholder')"
 						@validate="(value: boolean) => onValidate('repoUrl', value)"
 					/>
-					<n8n-button
+					<N8nButton
 						v-if="isConnected"
 						:class="$style.disconnectButton"
 						type="tertiary"
@@ -235,14 +235,14 @@ const onSelectSshKeyType = (value: Validatable) => {
 						icon="trash-2"
 						data-test-id="source-control-disconnect-button"
 						@click="onDisconnect"
-						>{{ locale.baseText('settings.sourceControl.button.disconnect') }}</n8n-button
+						>{{ locale.baseText('settings.sourceControl.button.disconnect') }}</N8nButton
 					>
 				</div>
 			</div>
 			<div v-if="sourceControlStore.preferences.publicKey" :class="$style.group">
 				<label>{{ locale.baseText('settings.sourceControl.sshKey') }}</label>
 				<div :class="{ [$style.sshInput]: !isConnected }">
-					<n8n-form-input
+					<N8nFormInput
 						v-if="!isConnected"
 						id="keyGeneratorType"
 						:class="$style.sshKeyTypeSelect"
@@ -264,7 +264,7 @@ const onSelectSshKeyType = (value: Validatable) => {
 						:value="sourceControlStore.preferences.publicKey"
 						:copy-button-text="locale.baseText('generic.clickToCopy')"
 					/>
-					<n8n-button
+					<N8nButton
 						v-if="!isConnected"
 						size="large"
 						type="tertiary"
@@ -273,9 +273,9 @@ const onSelectSshKeyType = (value: Validatable) => {
 						@click="refreshSshKey"
 					>
 						{{ locale.baseText('settings.sourceControl.refreshSshKey') }}
-					</n8n-button>
+					</N8nButton>
 				</div>
-				<n8n-notice type="info" class="mt-s">
+				<N8nNotice type="info" class="mt-s">
 					<I18nT keypath="settings.sourceControl.sshKeyDescription" tag="span" scope="global">
 						<template #link>
 							<a
@@ -285,26 +285,26 @@ const onSelectSshKeyType = (value: Validatable) => {
 							>
 						</template>
 					</I18nT>
-				</n8n-notice>
+				</N8nNotice>
 			</div>
-			<n8n-button
+			<N8nButton
 				v-if="!isConnected"
 				size="large"
 				:disabled="!validForConnection"
 				:class="$style.connect"
 				data-test-id="source-control-connect-button"
 				@click="onConnect"
-				>{{ locale.baseText('settings.sourceControl.button.connect') }}</n8n-button
+				>{{ locale.baseText('settings.sourceControl.button.connect') }}</N8nButton
 			>
 			<div v-if="isConnected" data-test-id="source-control-connected-content">
 				<div :class="$style.group">
 					<hr />
-					<n8n-heading size="xlarge" tag="h2" class="mb-s">{{
+					<N8nHeading size="xlarge" tag="h2" class="mb-s">{{
 						locale.baseText('settings.sourceControl.instanceSettings')
-					}}</n8n-heading>
+					}}</N8nHeading>
 					<label>{{ locale.baseText('settings.sourceControl.branches') }}</label>
 					<div :class="$style.branchSelection">
-						<n8n-form-input
+						<N8nFormInput
 							id="branchName"
 							label=""
 							type="select"
@@ -318,13 +318,13 @@ const onSelectSshKeyType = (value: Validatable) => {
 							@validate="(value: boolean) => onValidate('branchName', value)"
 							@update:model-value="onSelect"
 						/>
-						<n8n-tooltip placement="top">
+						<N8nTooltip placement="top">
 							<template #content>
 								<span>
 									{{ locale.baseText('settings.sourceControl.refreshBranches.tooltip') }}
 								</span>
 							</template>
-							<n8n-button
+							<N8nButton
 								size="small"
 								type="tertiary"
 								icon="refresh-cw"
@@ -333,9 +333,9 @@ const onSelectSshKeyType = (value: Validatable) => {
 								data-test-id="source-control-refresh-branches-button"
 								@click="refreshBranches"
 							/>
-						</n8n-tooltip>
+						</N8nTooltip>
 					</div>
-					<n8n-checkbox
+					<N8nCheckbox
 						v-model="sourceControlStore.preferences.branchReadOnly"
 						:class="$style.readOnly"
 					>
@@ -344,26 +344,26 @@ const onSelectSshKeyType = (value: Validatable) => {
 								<strong>{{ locale.baseText('settings.sourceControl.protected.bold') }}</strong>
 							</template>
 						</I18nT>
-					</n8n-checkbox>
+					</N8nCheckbox>
 				</div>
 				<div :class="$style.group">
 					<label>{{ locale.baseText('settings.sourceControl.color') }}</label>
 					<div>
-						<n8n-color-picker v-model="sourceControlStore.preferences.branchColor" size="small" />
+						<N8nColorPicker v-model="sourceControlStore.preferences.branchColor" size="small" />
 					</div>
 				</div>
 				<div :class="[$style.group, 'pt-s']">
-					<n8n-button
+					<N8nButton
 						size="large"
 						:disabled="!sourceControlStore.preferences.branchName"
 						data-test-id="source-control-save-settings-button"
 						@click="onSave"
-						>{{ locale.baseText('settings.sourceControl.button.save') }}</n8n-button
+						>{{ locale.baseText('settings.sourceControl.button.save') }}</N8nButton
 					>
 				</div>
 			</div>
 		</div>
-		<n8n-action-box
+		<N8nActionBox
 			v-else
 			data-test-id="source-control-content-unlicensed"
 			:class="$style.actionBox"
@@ -380,7 +380,7 @@ const onSelectSshKeyType = (value: Validatable) => {
 					{{ locale.baseText('settings.sourceControl.actionBox.description.link') }}
 				</a>
 			</template>
-		</n8n-action-box>
+		</N8nActionBox>
 	</div>
 </template>
 

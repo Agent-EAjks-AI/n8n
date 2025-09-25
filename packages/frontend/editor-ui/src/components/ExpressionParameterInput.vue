@@ -214,7 +214,7 @@ defineExpose({ focus, select });
 					/>
 				</template>
 			</DraggableTarget>
-			<n8n-button
+			<N8nButton
 				v-if="!isDragging"
 				square
 				outline
