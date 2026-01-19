@@ -12,6 +12,7 @@ import {
 	type ProjectRepository,
 	type SharedWorkflowRepository,
 	User,
+	type UserRepository,
 	WorkflowEntity,
 	type WorkflowRepository,
 } from '@n8n/db';
@@ -54,6 +55,7 @@ describe('SourceControlImportService', () => {
 	const projectRepository = mock<ProjectRepository>();
 	const projectRelationRepository = mock<ProjectRelationRepository>();
 	const sharedWorkflowRepository = mock<SharedWorkflowRepository>();
+	const userRepository = mock<UserRepository>();
 	const mockLogger = mock<Logger>();
 	const sourceControlScopedService = mock<SourceControlScopedService>();
 	const variableService = mock<VariablesService>();
@@ -73,7 +75,7 @@ describe('SourceControlImportService', () => {
 		mock(),
 		sharedWorkflowRepository,
 		mock(),
-		mock(),
+		userRepository,
 		variablesRepository,
 		workflowRepository,
 		mock(),
@@ -1489,6 +1491,12 @@ describe('SourceControlImportService', () => {
 						columns: [{ id: 'col1', name: 'Column 1', type: 'string', index: 0 }],
 						createdAt: new Date('2024-01-01'),
 						updatedAt: new Date('2024-01-02'),
+						project: {
+							id: 'project1',
+							name: 'Team Project 1',
+							type: 'team',
+							projectRelations: [],
+						},
 					},
 				];
 
@@ -1502,13 +1510,22 @@ describe('SourceControlImportService', () => {
 				expect(result[0]).toEqual({
 					id: 'dt1',
 					name: 'Test Table',
-					projectId: 'project1',
+					ownedBy: {
+						type: 'team',
+						projectId: 'project1',
+						projectName: 'Team Project 1',
+					},
 					columns: [{ id: 'col1', name: 'Column 1', type: 'string', index: 0 }],
 					createdAt: '2024-01-01T00:00:00.000Z',
 					updatedAt: '2024-01-02T00:00:00.000Z',
 				});
 				expect(dataTableRepository.find).toHaveBeenCalledWith({
-					relations: ['columns'],
+					relations: [
+						'columns',
+						'project',
+						'project.projectRelations',
+						'project.projectRelations.role',
+					],
 				});
 			});
 
@@ -1592,7 +1609,11 @@ describe('SourceControlImportService', () => {
 				const mockDataTable = {
 					id: 'dt1',
 					name: 'Test Table',
-					projectId: 'project1',
+					ownedBy: {
+						type: 'team',
+						teamId: 'project1',
+						teamName: 'Team Project 1',
+					},
 					columns: [{ id: 'col1', name: 'Column 1', type: 'string', index: 0 }],
 					createdAt: '2024-01-01T00:00:00.000Z',
 					updatedAt: '2024-01-02T00:00:00.000Z',
@@ -1602,6 +1623,7 @@ describe('SourceControlImportService', () => {
 				dataTableRepository.findOne.mockResolvedValue(null);
 				dataTableColumnRepository.find.mockResolvedValue([]);
 				dataTableColumnRepository.save.mockResolvedValue({ id: 'col1' } as any);
+				projectRepository.findOne.mockResolvedValue({ id: 'project1', type: 'team' } as any);
 
 				// Act
 				await service.importDataTablesFromWorkFolder([mockCandidate], mockUser.id);
@@ -1611,7 +1633,7 @@ describe('SourceControlImportService', () => {
 					{
 						id: 'dt1',
 						name: 'Test Table',
-						project: { id: 'project1' },
+						projectId: 'project1',
 						createdAt: '2024-01-01T00:00:00.000Z',
 						updatedAt: '2024-01-02T00:00:00.000Z',
 					},
@@ -1627,12 +1649,17 @@ describe('SourceControlImportService', () => {
 				expect(dataTableDDLService.createTableWithColumns).toHaveBeenCalled();
 			});
 
-			it('should use personal project when referenced project does not exist', async () => {
+			it('should import personal project data table', async () => {
 				// Arrange
 				const mockDataTable = {
 					id: 'dt1',
 					name: 'Test Table',
-					projectId: 'non-existent-project',
+					ownedBy: {
+						type: 'personal',
+						projectId: 'personal-project-1',
+						projectName: 'User Name',
+						personalEmail: 'user@example.com',
+					},
 					columns: [{ id: 'col1', name: 'Column 1', type: 'string', index: 0 }],
 					createdAt: '2024-01-01T00:00:00.000Z',
 					updatedAt: '2024-01-02T00:00:00.000Z',
@@ -1642,6 +1669,7 @@ describe('SourceControlImportService', () => {
 				dataTableRepository.findOne.mockResolvedValue(null);
 				dataTableColumnRepository.find.mockResolvedValue([]);
 				dataTableColumnRepository.save.mockResolvedValue({ id: 'col1' } as any);
+				userRepository.findOne.mockResolvedValue({ id: 'user1', email: 'user@example.com' } as any);
 
 				// Act
 				await service.importDataTablesFromWorkFolder([mockCandidate], mockUser.id);
@@ -1651,7 +1679,7 @@ describe('SourceControlImportService', () => {
 					{
 						id: 'dt1',
 						name: 'Test Table',
-						project: { id: 'personal-project-1' },
+						projectId: 'personal-project-1',
 						createdAt: '2024-01-01T00:00:00.000Z',
 						updatedAt: '2024-01-02T00:00:00.000Z',
 					},
@@ -1664,7 +1692,11 @@ describe('SourceControlImportService', () => {
 				const mockDataTable = {
 					id: 'dt1',
 					name: 'Updated Table',
-					projectId: 'project1',
+					ownedBy: {
+						type: 'team',
+						teamId: 'project1',
+						teamName: 'Team Project 1',
+					},
 					columns: [
 						{ id: 'col1', name: 'Column 1', type: 'string', index: 0 },
 						{ id: 'col2', name: 'Column 2', type: 'number', index: 1 },
@@ -1684,6 +1716,7 @@ describe('SourceControlImportService', () => {
 				dataTableRepository.findOne.mockResolvedValue(existingTable as any);
 				dataTableColumnRepository.find.mockResolvedValue([{ id: 'col1', name: 'Column 1' }] as any);
 				dataTableColumnRepository.save.mockImplementation(async (col: any) => col);
+				projectRepository.findOne.mockResolvedValue({ id: 'project1', type: 'team' } as any);
 
 				// Act
 				await service.importDataTablesFromWorkFolder([mockCandidate], mockUser.id);
@@ -1703,7 +1736,11 @@ describe('SourceControlImportService', () => {
 				const mockDataTable = {
 					id: 'dt1',
 					name: 'Test Table',
-					projectId: 'project1',
+					ownedBy: {
+						type: 'team',
+						teamId: 'project1',
+						teamName: 'Team Project 1',
+					},
 					columns: [{ id: 'col1', name: 'Column 1', type: 'string', index: 0 }],
 					createdAt: '2024-01-01T00:00:00.000Z',
 					updatedAt: '2024-01-02T00:00:00.000Z',
@@ -1726,6 +1763,7 @@ describe('SourceControlImportService', () => {
 					{ id: 'col2', name: 'Column 2' },
 				] as any);
 				dataTableColumnRepository.save.mockResolvedValue({ id: 'col1' } as any);
+				projectRepository.findOne.mockResolvedValue({ id: 'project1', type: 'team' } as any);
 
 				// Act
 				await service.importDataTablesFromWorkFolder([mockCandidate], mockUser.id);
