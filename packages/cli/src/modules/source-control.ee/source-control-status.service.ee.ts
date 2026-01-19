@@ -60,7 +60,6 @@ export class SourceControlStatusService {
 	/**
 	 * Converts data table ownership (from file or DB) to StatusResourceOwner (for API).
 	 * Returns undefined for personal projects since IDs don't sync across instances.
-	 * Data tables don't have legacy string format.
 	 */
 	private convertToStatusResourceOwner(
 		owner: DataTableResourceOwner | StatusResourceOwner | null | undefined,
@@ -69,12 +68,10 @@ export class SourceControlStatusService {
 			return;
 		}
 
-		// Personal projects don't sync IDs across instances, so we don't show ownership in status
 		if (owner.type === 'personal') {
 			return;
 		}
 
-		// Check for TeamResourceOwner first (has teamId)
 		if ('teamId' in owner && 'teamName' in owner) {
 			return {
 				type: 'team',
@@ -83,7 +80,6 @@ export class SourceControlStatusService {
 			};
 		}
 
-		// If it's StatusResourceOwner (has projectId but not teamId), return as-is
 		if ('projectId' in owner) {
 			return owner;
 		}
