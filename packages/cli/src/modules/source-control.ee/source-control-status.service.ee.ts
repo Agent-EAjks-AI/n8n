@@ -499,10 +499,6 @@ export class SourceControlStatusService {
 		});
 
 		dtMissingInLocal.forEach((item) => {
-			this.logger.debug(
-				`[DataTable Debug] dtMissingInLocal - ID: ${item.id}, Name: ${item.name}, Owner:`,
-				item.ownedBy,
-			);
 			sourceControlledFiles.push({
 				id: item.id,
 				name: item.name,
@@ -517,11 +513,7 @@ export class SourceControlStatusService {
 		});
 
 		dtMissingInRemote.forEach((item) => {
-			this.logger.debug(
-				`[DataTable Debug] dtMissingInRemote - ID: ${item.id}, Name: ${item.name}, Owner:`,
-				item.ownedBy,
-			);
-			const fileData = {
+			sourceControlledFiles.push({
 				id: item.id,
 				name: item.name,
 				type: 'datatable',
@@ -531,16 +523,10 @@ export class SourceControlStatusService {
 				file: getDataTableExportPath(item.id, this.dataTableExportFolder),
 				updatedAt: new Date().toISOString(),
 				owner: item.ownedBy ?? undefined,
-			};
-			this.logger.debug(`[DataTable Debug] Pushing file data:`, fileData);
-			sourceControlledFiles.push(fileData);
+			});
 		});
 
 		dtModifiedInEither.forEach((item) => {
-			this.logger.debug(
-				`[DataTable Debug] dtModifiedInEither - ID: ${item.id}, Name: ${item.name}, Owner:`,
-				item.ownedBy,
-			);
 			sourceControlledFiles.push({
 				id: item.id,
 				name: item.name,
@@ -551,16 +537,6 @@ export class SourceControlStatusService {
 				file: getDataTableExportPath(item.id, this.dataTableExportFolder),
 				updatedAt: new Date().toISOString(),
 				owner: item.ownedBy ?? undefined,
-			});
-		});
-
-		const dataTableFiles = sourceControlledFiles.filter((f) => f.type === 'datatable');
-		this.logger.debug(`[DataTable Debug] Final data table files count: ${dataTableFiles.length}`);
-		dataTableFiles.forEach((file) => {
-			this.logger.debug(`[DataTable Debug] Final file:`, {
-				id: file.id,
-				name: file.name,
-				owner: file.owner,
 			});
 		});
 
