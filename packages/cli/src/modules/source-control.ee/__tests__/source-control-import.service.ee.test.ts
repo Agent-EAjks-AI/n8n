@@ -1516,6 +1516,7 @@ describe('SourceControlImportService', () => {
 						projectName: 'Team Project 1',
 					},
 					columns: [{ id: 'col1', name: 'Column 1', type: 'string', index: 0 }],
+					filename: expect.stringContaining('dt1.json'),
 					createdAt: '2024-01-01T00:00:00.000Z',
 					updatedAt: '2024-01-02T00:00:00.000Z',
 				});
