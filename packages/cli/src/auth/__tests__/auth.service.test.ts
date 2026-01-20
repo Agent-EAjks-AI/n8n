@@ -813,4 +813,132 @@ describe('AuthService', () => {
 			});
 		});
 	});
+
+	describe('authenticateUserBasedOnToken', () => {
+		let testToken: string;
+		let testTokenWithMfa: string;
+
+		beforeEach(() => {
+			invalidAuthTokenRepository.existsBy.mockResolvedValue(false);
+			userRepository.findOne.mockResolvedValue(user);
+			// Generate fresh tokens that match the current user mock state
+			testToken = authService.issueJWT(user, false, browserId);
+			testTokenWithMfa = authService.issueJWT(user, true, browserId);
+		});
+
+		it('should return user with valid token and no MFA requirements', async () => {
+			mfaService.isMFAEnforced.mockResolvedValue(false);
+
+			const result = await authService.authenticateUserBasedOnToken(testToken, browserId);
+
+			expect(result).toBe(user);
+			expect(invalidAuthTokenRepository.existsBy).toHaveBeenCalledWith({ token: testToken });
+		});
+
+		it('should return user when MFA was used during authentication', async () => {
+			mfaService.isMFAEnforced.mockResolvedValue(true);
+
+			const result = await authService.authenticateUserBasedOnToken(testTokenWithMfa, browserId);
+
+			expect(result).toBe(user);
+		});
+
+		it('should throw AuthError if token has been revoked', async () => {
+			invalidAuthTokenRepository.existsBy.mockResolvedValue(true);
+
+			await expect(authService.authenticateUserBasedOnToken(testToken, browserId)).rejects.toThrow(
+				'Unauthorized',
+			);
+
+			expect(userRepository.findOne).not.toHaveBeenCalled();
+		});
+
+		it('should throw AuthError if token is expired', async () => {
+			jest.advanceTimersByTime(365 * Time.days.toMilliseconds);
+
+			await expect(authService.authenticateUserBasedOnToken(testToken, browserId)).rejects.toThrow(
+				'jwt expired',
+			);
+		});
+
+		it('should throw AuthError if token is invalid', async () => {
+			await expect(
+				authService.authenticateUserBasedOnToken('invalid-token', browserId),
+			).rejects.toThrow('jwt malformed');
+		});
+
+		it('should throw AuthError if user is disabled', async () => {
+			const disabledUser = mock<User>({ ...userData, disabled: true });
+			userRepository.findOne.mockResolvedValue(disabledUser);
+
+			await expect(authService.authenticateUserBasedOnToken(testToken, browserId)).rejects.toThrow(
+				'Unauthorized',
+			);
+		});
+
+		it('should throw AuthError if user does not exist', async () => {
+			userRepository.findOne.mockResolvedValue(null);
+
+			await expect(authService.authenticateUserBasedOnToken(testToken, browserId)).rejects.toThrow(
+				'Unauthorized',
+			);
+		});
+
+		it('should throw AuthError if browserId does not match', async () => {
+			await expect(
+				authService.authenticateUserBasedOnToken(testToken, 'different-browser-id'),
+			).rejects.toThrow('Unauthorized');
+		});
+
+		it('should allow skipping browserId check when browserId is false', async () => {
+			mfaService.isMFAEnforced.mockResolvedValue(false);
+
+			const result = await authService.authenticateUserBasedOnToken(testToken, false);
+
+			expect(result).toBe(user);
+		});
+
+		it('should throw AuthError if MFA is enforced but not used', async () => {
+			mfaService.isMFAEnforced.mockResolvedValue(true);
+
+			await expect(authService.authenticateUserBasedOnToken(testToken, browserId)).rejects.toThrow(
+				'Unauthorized',
+			);
+		});
+
+		it('should throw AuthError if user has MFA enabled but did not use it', async () => {
+			const userWithMfa = mock<User>({ ...userData, mfaEnabled: true, mfaSecret: 'secret' });
+			userRepository.findOne.mockResolvedValue(userWithMfa);
+			mfaService.isMFAEnforced.mockResolvedValue(false);
+
+			await expect(authService.authenticateUserBasedOnToken(testToken, browserId)).rejects.toThrow(
+				'Unauthorized',
+			);
+		});
+
+		it('should throw AuthError if token hash does not match user', async () => {
+			const userWithDifferentPassword = mock<User>({
+				...userData,
+				password: 'different-password',
+			});
+			userRepository.findOne.mockResolvedValue(userWithDifferentPassword);
+
+			await expect(authService.authenticateUserBasedOnToken(testToken, browserId)).rejects.toThrow(
+				'Unauthorized',
+			);
+		});
+
+		it('should work correctly with undefined browserId when token has no browserId', async () => {
+			// Generate a token without browserId
+			const tokenWithoutBrowserId = authService.issueJWT(user, false);
+			mfaService.isMFAEnforced.mockResolvedValue(false);
+
+			const result = await authService.authenticateUserBasedOnToken(
+				tokenWithoutBrowserId,
+				undefined,
+			);
+
+			expect(result).toBe(user);
+		});
+	});
 });

@@ -206,11 +206,39 @@ export class AuthService {
 		});
 	}
 
-	async resolveJwt(
+	async authenticateUserBasedOnToken(
 		token: string,
-		req: AuthenticatedRequest,
-		res: Response,
-	): Promise<[User, { usedMfa: boolean }]> {
+		browserId: string | undefined | false,
+	): Promise<User> {
+		const isInvalid = await this.invalidAuthTokenRepository.existsBy({ token });
+		if (isInvalid) throw new AuthError('Unauthorized');
+
+		const { user, jwtPayload } = await this.validateToken(token, browserId);
+		const usedMfa = jwtPayload.usedMfa ?? false;
+
+		// MFA was used, we are good either way.
+		if (usedMfa) {
+			return user;
+		}
+		const mfaEnforced = await this.mfaService.isMFAEnforced();
+
+		if (!mfaEnforced && !user.mfaEnabled) {
+			// MFA is not enforced and the user has MFA not enabled
+			// we are good
+			return user;
+		}
+
+		// either MFA is enforced or user has MFA enabled
+		throw new AuthError('Unauthorized');
+	}
+
+	private async validateToken(
+		token: string,
+		browserId: string | undefined | false,
+	): Promise<{
+		user: User;
+		jwtPayload: IssuedJWT;
+	}> {
 		const jwtPayload: IssuedJWT = this.jwtService.verify(token, {
 			algorithms: ['HS256'],
 		});
@@ -232,17 +260,35 @@ export class AuthService {
 			throw new AuthError('Unauthorized');
 		}
 
-		// Check if the token was issued for another browser session, ignoring the endpoints that can't send custom headers
-		const endpoint = req.route ? `${req.baseUrl}${req.route.path}` : req.baseUrl;
-		if (req.method === 'GET' && this.skipBrowserIdCheckEndpoints.includes(endpoint)) {
-			this.logger.debug(`Skipped browserId check on ${endpoint}`);
-		} else if (
+		if (
+			browserId !== false &&
 			jwtPayload.browserId &&
-			(!req.browserId || jwtPayload.browserId !== this.hash(req.browserId))
+			(!browserId || jwtPayload.browserId !== this.hash(browserId))
 		) {
-			this.logger.warn(`browserId check failed on ${endpoint}`);
+			this.logger.warn('browserId check failed');
 			throw new AuthError('Unauthorized');
 		}
+
+		return {
+			user,
+			jwtPayload,
+		};
+	}
+
+	async resolveJwt(
+		token: string,
+		req: AuthenticatedRequest,
+		res: Response,
+	): Promise<[User, { usedMfa: boolean }]> {
+		// Check if the token was issued for another browser session, ignoring the endpoints that can't send custom headers
+		const endpoint = req.route ? `${req.baseUrl}${req.route.path}` : req.baseUrl;
+		let browserId: string | undefined | false = req.browserId;
+		if (req.method === 'GET' && this.skipBrowserIdCheckEndpoints.includes(endpoint)) {
+			this.logger.debug(`Skipped browserId check on ${endpoint}`);
+			browserId = false;
+		}
+
+		const { user, jwtPayload } = await this.validateToken(token, browserId);
 
 		if (jwtPayload.exp * 1000 - Date.now() < this.jwtRefreshTimeout) {
 			this.logger.debug('JWT about to expire. Will be refreshed');
