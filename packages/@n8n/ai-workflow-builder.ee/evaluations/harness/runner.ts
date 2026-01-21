@@ -696,7 +696,7 @@ async function runLangsmithEvaluateAndFlush(params: {
 	lsClient: LangsmithRunConfig['langsmithClient'];
 	logger: EvalLogger;
 	targetCallCount: () => number;
-}): Promise<void> {
+}): Promise<{ experimentName?: string }> {
 	const {
 		target,
 		effectiveData,
@@ -716,7 +716,7 @@ async function runLangsmithEvaluateAndFlush(params: {
 	const { runType, filterValue } = computeFilterMetadata(langsmithOptions.filters);
 
 	const evalStartTime = Date.now();
-	await evaluate(target, {
+	const experimentResults = await evaluate(target, {
 		data: effectiveData,
 		evaluators: [feedbackExtractor],
 		experimentPrefix: langsmithOptions.experimentName,
@@ -743,6 +743,24 @@ async function runLangsmithEvaluateAndFlush(params: {
 	const flushStartTime = Date.now();
 	await lsClient.awaitPendingTraceBatches();
 	logger.verbose(`Flush completed in ${((Date.now() - flushStartTime) / 1000).toFixed(1)}s`);
+
+	const experimentName = experimentResults.experimentName;
+	logger.info(`Experiment completed: ${experimentName}`);
+
+	return { experimentName };
+}
+
+/**
+ * Construct experiment URL from LangSmith client and experiment details.
+ */
+function buildExperimentUrl(
+	lsClient: LangsmithRunConfig['langsmithClient'],
+	dataset: string,
+	experimentName?: string,
+): string | undefined {
+	if (!experimentName) return undefined;
+	const hostUrl = lsClient.getHostUrl?.() ?? 'https://smith.langchain.com';
+	return `${hostUrl}/public/${encodeURIComponent(dataset)}/e/${encodeURIComponent(experimentName)}`;
 }
 
 /**
@@ -961,7 +979,7 @@ async function runLangsmith(config: LangsmithRunConfig): Promise<RunSummary> {
 	totalExamples = Array.isArray(effectiveData) ? effectiveData.length : 0;
 
 	logLangsmithInputsSummary(logger, effectiveData);
-	await runLangsmithEvaluateAndFlush({
+	const { experimentName: actualExperimentName } = await runLangsmithEvaluateAndFlush({
 		target,
 		effectiveData,
 		feedbackExtractor,
@@ -971,6 +989,8 @@ async function runLangsmith(config: LangsmithRunConfig): Promise<RunSummary> {
 		targetCallCount: () => targetCallCount,
 	});
 
+	const experimentUrl = buildExperimentUrl(lsClient, dataset, actualExperimentName);
+
 	// Return placeholder summary - LangSmith handles actual results
 	const summary: RunSummary = {
 		totalExamples: stats.total,
@@ -979,6 +999,7 @@ async function runLangsmith(config: LangsmithRunConfig): Promise<RunSummary> {
 		errors: stats.errors,
 		averageScore: stats.total > 0 ? stats.scoreSum / stats.total : 0,
 		totalDurationMs: stats.durationSumMs,
+		experimentUrl,
 	};
 
 	if (artifactSaver && capturedResults) {
