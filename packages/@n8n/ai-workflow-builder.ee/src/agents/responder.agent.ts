@@ -9,7 +9,7 @@ import {
 	buildRecursionErrorWithWorkflowGuidance,
 	buildRecursionErrorNoWorkflowGuidance,
 	buildGeneralErrorGuidance,
-} from '@/prompts/agents/responder.prompt';
+} from '@/prompts';
 
 import type { CoordinationLogEntry } from '../types/coordination';
 import type { DiscoveryContext } from '../types/discovery-types';

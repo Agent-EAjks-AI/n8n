@@ -8,11 +8,7 @@ import type { Logger } from '@n8n/backend-common';
 import type { INodeTypeDescription } from 'n8n-workflow';
 
 import { LLMServiceError } from '@/errors';
-import {
-	buildConfiguratorPrompt,
-	buildRecoveryModeContext,
-	INSTANCE_URL_PROMPT,
-} from '@/prompts/agents/configurator.prompt';
+import { buildConfiguratorPrompt, buildRecoveryModeContext, INSTANCE_URL_PROMPT } from '@/prompts';
 import type { BuilderFeatureFlags, ChatPayload } from '@/workflow-builder-agent';
 
 import { BaseSubgraph } from './subgraph-interface';
@@ -221,9 +217,10 @@ export class ConfiguratorSubgraph extends BaseSubgraph<
 		}
 
 		// 2. Discovery context - includes available resources/operations for each node type
+		// Best practices now embedded in prompts, no longer passed at runtime
 		if (parentState.discoveryContext) {
 			contextParts.push('=== DISCOVERY CONTEXT ===');
-			contextParts.push(buildDiscoveryContextBlock(parentState.discoveryContext, true));
+			contextParts.push(buildDiscoveryContextBlock(parentState.discoveryContext, false));
 		}
 
 		// 3. Check if this workflow came from a recovered builder recursion error (AI-1812)
