@@ -172,7 +172,7 @@ export class AiWorkflowBuilderService {
 			user,
 			userMessageId,
 		);
-		const haiku = await anthropicHaiku45({
+		const opus = await anthropicClaudeOpus45({
 			apiKey: process.env.N8N_AI_ANTHROPIC_KEY ?? '',
 		});
 		const sonnet = await anthropicClaudeSonnet45({
